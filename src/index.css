@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* This is how we define your custom primary blue color in Tailwind v4! */
+@theme {
+  --color-primary: #1d4ed8;
+}
+
+body {
+  background-color: #f9fafb;
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}

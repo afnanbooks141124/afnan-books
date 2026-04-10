@@ -17,7 +17,7 @@ export default function ClientCompany() {
 
   // --- FETCH DATA ---
   const fetchCompanies = () => {
-    fetch("http://localhost:5000/api/companies")
+    fetch( "https://afnan-books.onrender.com/api/companies" )
       .then((res) => res.json())
       .then((data) => {
         setCompanies(data);
@@ -50,8 +50,8 @@ export default function ClientCompany() {
     e.preventDefault();
 
     const url = editId 
-      ? `http://localhost:5000/api/companies/${editId}` 
-      : "http://localhost:5000/api/companies";
+      ? `https://afnan-books.onrender.com/api/companies/${editId}` 
+      : "https://afnan-books.onrender.com/api/companies";
       
     const method = editId ? "PUT" : "POST";
 
@@ -79,7 +79,7 @@ export default function ClientCompany() {
     if(!window.confirm("Are you sure you want to delete this company?")) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/companies/${id}`, {
+      const response = await fetch(`https://afnan-books.onrender.com/api/companies/${id}`, {
         method: "DELETE"
       });
 

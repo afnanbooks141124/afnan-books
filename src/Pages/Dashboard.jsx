@@ -5,7 +5,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ companies: 0, users: 0 });
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/stats")
+    fetch("https://afnan-books.onrender.com/api/stats")
       .then(res => res.json())
       .then(data => setStats(data))
       .catch(err => console.error("Error fetching stats:", err));

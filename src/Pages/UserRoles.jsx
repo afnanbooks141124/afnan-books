@@ -13,7 +13,7 @@ export default function UserRoles() {
 
   // Fetch users from backend
   const fetchUsers = () => {
-    fetch("http://localhost:5000/api/users")
+    fetch("https://afnan-books.onrender.com/api/users")
       .then((res) => res.json())
       .then((data) => {
         setUsers(data);
@@ -33,7 +33,7 @@ export default function UserRoles() {
   // Save or Update User
   const handleSaveUser = async (e) => {
     e.preventDefault();
-    const url = editId ? `http://localhost:5000/api/users/${editId}` : "http://localhost:5000/api/users";
+    const url = editId ? `https://afnan-books.onrender.com/api/users/${editId}` : "https://afnan-books.onrender.com/api/users";
     const method = editId ? "PUT" : "POST";
 
     try {
@@ -59,7 +59,7 @@ export default function UserRoles() {
   const handleDelete = async (id) => {
     if(!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/users/${id}`, { method: "DELETE" });
+      const response = await fetch(`https://afnan-books.onrender.com/api/users/${id}`, { method: "DELETE" });
       if (response.ok) {
         fetchUsers();
         toast.success("User deleted!");

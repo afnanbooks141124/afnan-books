@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
-import { Search, Plus, RefreshCw, FileText, FileSpreadsheet, PlaySquare, FileOutput, Edit2, X, Trash2 } from "lucide-react";
+import { Search, Plus, FileText, Edit2, X, Trash2 } from "lucide-react";
 
 export default function ClientCompany() {
   // 1. Data States
   const [companies, setCompanies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 2. Search State (Must be declared before we use it to filter!)
+  // 2. Search State
   const [searchTerm, setSearchTerm] = useState("");
   
   // 3. Modal States
@@ -17,10 +17,14 @@ export default function ClientCompany() {
 
   // --- FETCH DATA ---
   const fetchCompanies = () => {
-    fetch( "https://afnan-books.onrender.com/api/companies" )
-      .then((res) => res.json())
+    setIsLoading(true);
+    fetch(`https://afnan-books.onrender.com/api/companies`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
       .then((data) => {
-        setCompanies(data);
+        setCompanies(Array.isArray(data) ? data : []);
         setIsLoading(false);
       })
       .catch((err) => {
@@ -35,9 +39,7 @@ export default function ClientCompany() {
   }, []);
 
   // --- THE SEARCH FILTER ---
-  // This constantly watches the searchTerm and filters the list automatically
   const filteredCompanies = companies.filter((company) => {
-    // Added safety checks to prevent crashes if a name/gstin is missing
     const companyName = company.name ? company.name.toLowerCase() : "";
     const companyGst = company.gstin ? company.gstin.toLowerCase() : "";
     const searchLower = searchTerm.toLowerCase();
@@ -51,7 +53,7 @@ export default function ClientCompany() {
 
     const url = editId 
       ? `https://afnan-books.onrender.com/api/companies/${editId}` 
-      : "https://afnan-books.onrender.com/api/companies";
+      : `https://afnan-books.onrender.com/api/companies`;
       
     const method = editId ? "PUT" : "POST";
 
@@ -68,9 +70,13 @@ export default function ClientCompany() {
         setIsModalOpen(false);
         fetchCompanies();
         toast.success(editId ? "Company updated successfully!" : "Company created successfully!");
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to save company");
       }
     } catch (error) {
-      toast.error("An error occurred");
+      console.error("Save error:", error);
+      toast.error("An error occurred while saving");
     }
   };
 
@@ -86,8 +92,11 @@ export default function ClientCompany() {
       if (response.ok) {
         fetchCompanies();
         toast.success("Company deleted forever!");
+      } else {
+        toast.error("Could not delete company from server");
       }
     } catch (error) {
+      console.error("Delete error:", error);
       toast.error("Failed to delete company");
     }
   };
@@ -115,7 +124,6 @@ export default function ClientCompany() {
             <FileText className="text-blue-600 w-5 h-5" />
             <h1 className="text-lg font-bold text-gray-800">My Company</h1>
             <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-              {/* Show count based on filtered results */}
               {filteredCompanies.length}
             </span>
           </div>
@@ -163,7 +171,6 @@ export default function ClientCompany() {
                 </tr>
               )}
 
-              {/* Notice we map over filteredCompanies now! */}
               {!isLoading && filteredCompanies.length === 0 && (
                 <tr>
                   <td colSpan="5" className="px-4 py-8 text-center text-gray-500 font-medium">
@@ -173,11 +180,11 @@ export default function ClientCompany() {
               )}
 
               {!isLoading && filteredCompanies.map((company, index) => (
-                <tr key={company._id} className="hover:bg-gray-50 transition">
+                <tr key={company._id || index} className="hover:bg-gray-50 transition">
                   <td className="px-4 py-3 text-gray-500">{index + 1}</td>
                   <td className="px-4 py-3 font-medium">{company.name}</td>
                   <td className="px-4 py-3 text-gray-500">{company.gstin}</td>
-                  <td className="px-4 py-3 text-blue-600 hover:underline cursor-pointer">{company.client}</td>
+                  <td className="px-4 py-3 text-blue-600 hover:underline cursor-pointer">{company.client || "N/A"}</td>
                   <td className="px-4 py-3 text-center flex items-center justify-center gap-3">
                     <button onClick={() => openEditModal(company)} className="text-blue-500 hover:text-blue-700">
                       <Edit2 className="w-4 h-4" />

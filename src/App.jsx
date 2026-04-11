@@ -1,15 +1,17 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
-import ClientCompany from "./Pages/ClientCompany";
-import GstManager from "./Pages/GstManager";
+import ClientCompany from "./pages/ClientCompany";
+import GstManager from "./pages/GstManager";
 import UserRoles from "./pages/UserRoles";
 import DataEntry from "./pages/DataEntry";
 import LedgerMaster from "./pages/LedgerMaster";
 import Banking from "./pages/Banking";
 import Sales from "./pages/Sales";
 import Reports from "./pages/Reports";
-import Analysis from "./Pages/Analysis";
+import Analysis from "./pages/Analysis";
+
+// ... rest of the App component ...
 
 function App() {
   return (

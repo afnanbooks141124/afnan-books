@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./Pages/Dashboard";
-import ClientCompany from "./Pages/ClientCompany";
-import GstManager from "./Pages/GstManager";
+import ClientCompany from "./Pages/Clientcompany";
+import GstManager from "./Pages/Gstmanager";
 import UserRoles from "./Pages/UserRoles";
 import DataEntry from "./Pages/DataEntry";
 import LedgerMaster from "./Pages/LedgerMaster";

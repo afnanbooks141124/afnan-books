@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Toaster } from "react-hot-toast"; // <-- IMPORT THIS
-import Sidebar from "./Sidebar";
+import Sidebar from "./sidebar";
 import Topbar from "./Topbar";
 
 export default function Layout() {

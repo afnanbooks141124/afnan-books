@@ -15,7 +15,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/" element={<layout />}>
           <Route index element={<Dashboard />} />
           <Route path="company" element={<ClientCompany />} />
           <Route path="gst-manager" element={<GstManager />} />

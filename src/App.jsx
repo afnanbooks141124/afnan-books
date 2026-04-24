@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import layout from "./components/layout";
+import Layout from "./components/Layout";
 import Dashboard from "./Pages/Dashboard";
 import ClientCompany from "./Pages/ClientCompany";
 import GstManager from "./Pages/GstManager";
@@ -15,7 +15,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<layout />}>
+        <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="company" element={<ClientCompany />} />
           <Route path="gst-manager" element={<GstManager />} />

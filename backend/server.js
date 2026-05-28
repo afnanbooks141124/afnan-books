@@ -1,156 +1,83 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 
-// Initialize app & environment variables
 dotenv.config();
+
 const app = express();
 
-// Middleware
-app.use(cors());
+// 1. GLOBAL CORS UNLOCKER
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// --- DATABASE CONNECTION ---
+// 2. MONGODB CONNECTION
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ Successfully connected to MongoDB!'))
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// --- DATABASE SCHEMA & MODEL ---
-// This tells MongoDB exactly what data a "Company" should have
-const companySchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  tradeName: { type: String, default: "-" },
-  gstin: { type: String, required: true },
-  pan: { type: String, default: "-" },
-  client: { type: String, default: "Assign Client" },
-  mobile: { type: String, default: "-" }
-}, { timestamps: true });
-
-const Company = mongoose.model('Company', companySchema);
-
-// --- API ROUTES ---
-
-// Add this simple route to stop the 404 errors!
-app.get('/', (req, res) => {
-  res.send('Afnan Books Backend API is running perfectly!');
-});
-
-// 1. GET: Fetch all companies from the database
-app.get('/api/companies', async (req, res) => {
-  try {
-    const companies = await Company.find(); // Fetches everything from MongoDB
-    res.json(companies);
-  } catch (error) {
-    res.status(500).json({ message: "Server Error" });
-  }
-});
-
-// 2. POST: Add a brand new company to the database
-app.post('/api/companies', async (req, res) => {
-  try {
-    const newCompany = new Company(req.body);
-    const savedCompany = await newCompany.save(); // Saves to MongoDB
-    res.status(201).json(savedCompany);
-  } catch (error) {
-    res.status(400).json({ message: "Failed to create company", error });
-  }
-});
-// ... existing POST route above this line ...
-
-// 3. PUT: Update an existing company
-app.put('/api/companies/:id', async (req, res) => {
-  try {
-    const updatedCompany = await Company.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
-      { new: true } // returns the updated document
-    );
-    res.json(updatedCompany);
-  } catch (error) {
-    res.status(400).json({ message: "Failed to update company", error });
-  }
-});
-
-// 4. DELETE: Remove a company
-app.delete('/api/companies/:id', async (req, res) => {
-  try {
-    await Company.findByIdAndDelete(req.params.id);
-    res.json({ message: "Company successfully deleted" });
-  } catch (error) {
-    res.status(400).json({ message: "Failed to delete company", error });
-  }
-});
-
-// ==========================================
-// --- USER SCHEMA & MODEL ---
-// ==========================================
+// 3. DATABASE SCHEMAS
 const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
   name: { type: String, required: true },
-  email: { type: String, required: true },
-  role: { type: String, default: "Primary User" },
-  mobile: { type: String, required: true },
-  status: { type: String, default: "Active" }
-}, { timestamps: true });
-
+  role: { type: String, default: "User" }
+});
 const User = mongoose.model('User', userSchema);
 
-// --- USER API ROUTES ---
+const companySchema = new mongoose.Schema({
+  name: String, contact: String, email: String
+});
+const Company = mongoose.model('Company', companySchema);
 
-// GET all users
-app.get('/api/users', async (req, res) => {
+// 4. SMART SETUP: Master Admin Account
+const setupAdmin = async () => {
+  const adminExists = await User.findOne({ email: "admin@company.com" });
+  if (!adminExists) {
+    await User.create({
+      email: "admin@company.com",
+      password: "afnan123",
+      name: "Afrid R Goundi",
+      role: "Accounts Manager"
+    });
+    console.log("👑 Master Admin account automatically provisioned.");
+  }
+};
+setupAdmin();
+
+// 5. SECURE API ROUTES
+
+// --- HEALTH CHECK ROUTE (NEW) ---
+app.get('/', (req, res) => {
+  res.send("AFNAN BOOKS API IS LIVE AND UPDATED!");
+});
+
+// --- AUTH ROUTE ---
+app.post('/api/login', async (req, res) => {
   try {
-    const users = await User.find();
-    res.json(users);
+    const { email, password } = req.body;
+    const user = await User.findOne({ email }); 
+    
+    if (!user) return res.status(401).json({ error: "Invalid email address." });
+    
+    if (password === user.password) { 
+      res.json({ message: "Login successful", user: { name: user.name, role: user.role } });
+    } else {
+      res.status(401).json({ error: "Invalid password." });
+    }
   } catch (error) {
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ error: "Server error during login." });
   }
 });
 
-// POST a new user
-app.post('/api/users', async (req, res) => {
-  try {
-    const newUser = new User(req.body);
-    const savedUser = await newUser.save();
-    res.status(201).json(savedUser);
-  } catch (error) {
-    res.status(400).json({ message: "Failed to create user", error });
-  }
+// --- DATA ROUTES ---
+app.get('/api/companies', async (req, res) => {
+  try { const companies = await Company.find(); res.json(companies); } 
+  catch (error) { res.status(500).json({ error: "Failed to fetch companies" }); }
 });
 
-// PUT (Update) a user
-app.put('/api/users/:id', async (req, res) => {
-  try {
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updatedUser);
-  } catch (error) {
-    res.status(400).json({ message: "Failed to update user", error });
-  }
-});
-
-// DELETE a user
-app.delete('/api/users/:id', async (req, res) => {
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: "User successfully deleted" });
-  } catch (error) {
-    res.status(400).json({ message: "Failed to delete user", error });
-  }
-});
-
-// --- DASHBOARD STATS ROUTE ---
-app.get('/api/stats', async (req, res) => {
-  try {
-    const companiesCount = await Company.countDocuments();
-    const usersCount = await User.countDocuments();
-    res.json({ companies: companiesCount, users: usersCount });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch stats" });
-  }
-});
-
-// --- START SERVER ---
-const PORT = process.env.PORT || 5000;
+// 6. SERVER INIT
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running beautifully on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running beautifully on port ${PORT}`);
 });

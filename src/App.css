@@ -182,3 +182,9 @@
     border-right-color: var(--border);
   }
 }
+
+.my-custom-button {
+  background-color: #ff5733;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}

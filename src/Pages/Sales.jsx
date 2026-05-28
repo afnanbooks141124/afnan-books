@@ -1,92 +1,153 @@
-import { Download, Video, FileText, Play, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Sales() {
-  const tabs = ["Banking", "Sales", "Sales-Return", "Purchase", "Purchase-Return", "Journal", "Ledger", "Items"];
+  const navigate = useNavigate();
+  const [sales, setSales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Tally-Style Filters
+  const [filterMonth, setFilterMonth] = useState(""); 
+  const [filterStatus, setFilterStatus] = useState("All");
+
+  // 1. FETCH SALES (With LocalStorage memory for offline mode)
+  const fetchSales = async () => {
+    try {
+      const response = await fetch("https://afnan-books.onrender.com/api/sales");
+      if (!response.ok) throw new Error("Backend offline");
+      const data = await response.json();
+      setSales(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.warn("Backend offline. Using LocalStorage memory.");
+      // Check if we saved anything from the Invoice page!
+      const savedLocal = JSON.parse(localStorage.getItem("offlineSales"));
+      if (savedLocal && savedLocal.length > 0) {
+        setSales(savedLocal);
+      } else {
+        const dummyData = [
+          { _id: "1", invoiceNumber: "INV-2041", clientName: "Tech Solutions", amount: 45000, date: "2026-05-09", status: "Paid" },
+          { _id: "2", invoiceNumber: "INV-2042", clientName: "Global Retail", amount: 12500, date: "2026-05-08", status: "Pending" }
+        ];
+        setSales(dummyData);
+        localStorage.setItem("offlineSales", JSON.stringify(dummyData));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchSales(); }, []);
+
+  // 2. DELETE SALE
+  const handleDelete = async (id) => {
+    if (!window.confirm("Permanently delete this invoice record?")) return;
+    try {
+      const response = await fetch(`https://afnan-books.onrender.com/api/sales/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Delete failed");
+      fetchSales();
+    } catch (error) {
+      // Offline delete
+      const updated = sales.filter(s => s._id !== id);
+      setSales(updated);
+      localStorage.setItem("offlineSales", JSON.stringify(updated));
+    }
+  };
+
+  // 3. EDIT SALE (Teleports back to invoice page)
+  const handleEdit = (sale) => {
+    navigate('/invoices', { state: { editMode: true, saleData: sale } });
+  };
+
+  // 4. REPORTING MATH
+  const filteredSales = sales.filter(s => {
+    const matchesMonth = filterMonth === "" || s.date.startsWith(filterMonth);
+    const matchesStatus = filterStatus === "All" || s.status === filterStatus;
+    return matchesMonth && matchesStatus;
+  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const totalRevenue = filteredSales.filter(s => s.status === "Paid").reduce((sum, s) => sum + Number(s.amount), 0);
+  const pendingAmount = filteredSales.filter(s => s.status === "Pending").reduce((sum, s) => sum + Number(s.amount), 0);
 
   return (
-    <div className="bg-white border rounded-xl flex flex-col min-h-[80vh]">
+    <div className="w-full space-y-6 pb-10">
       
-      {/* Top Header & Tabs */}
-      <div className="border-b px-4 flex items-center justify-between overflow-x-auto">
-        <div className="flex gap-6">
-          {tabs.map((tab) => (
-            <button 
-              key={tab} 
-              className={`py-4 text-sm font-medium whitespace-nowrap ${tab === "Sales" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            >
-              {tab}
-            </button>
-          ))}
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4 border-b pb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Sales Register</h1>
+          <p className="text-gray-500 text-sm mt-1">Month-wise sales reporting and invoice tracking</p>
+        </div>
+        <button 
+          onClick={() => navigate('/invoices')} 
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition-colors"
+        >
+          ➕ Create New Invoice
+        </button>
+      </div>
+
+      {/* FILTERS & SUMMARY */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="p-4 border-b bg-gray-50 flex flex-col md:flex-row justify-between items-center gap-4">
+          <h2 className="font-bold text-gray-800 text-lg">Sales Report</h2>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <input type="month" className="p-2 border rounded-md focus:outline-blue-500 text-sm font-medium text-gray-700" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)} />
+            <select className="p-2 border rounded-md focus:outline-blue-500 text-sm font-medium text-gray-700" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="All">All Statuses</option>
+              <option value="Paid">Paid</option>
+              <option value="Pending">Pending</option>
+              <option value="Overdue">Overdue</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 divide-x border-b bg-white">
+          <div className="p-4 text-center">
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Paid (Collected)</p>
+            <p className="text-xl font-bold text-green-600">₹{totalRevenue.toLocaleString()}</p>
+          </div>
+          <div className="p-4 text-center bg-yellow-50">
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Total Pending</p>
+            <p className="text-xl font-bold text-yellow-600">₹{pendingAmount.toLocaleString()}</p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-2 py-2 ml-4">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition whitespace-nowrap">
-            <Download className="w-4 h-4" /> Upload Image
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition whitespace-nowrap">
-            <Plus className="w-4 h-4" /> Create Bill
-          </button>
-          <div className="flex items-center gap-1 border-l pl-2 ml-2">
-            <button className="p-1.5 text-red-600 hover:bg-red-50 border rounded"><Video className="w-4 h-4" /></button>
-            <button className="p-1.5 text-blue-600 hover:bg-blue-50 border rounded"><FileText className="w-4 h-4" /></button>
-          </div>
+        {/* TABLE */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-100 border-b border-gray-300">
+                <th className="p-3 font-bold text-gray-700 text-sm border-r">Date</th>
+                <th className="p-3 font-bold text-gray-700 text-sm border-r">Invoice #</th>
+                <th className="p-3 font-bold text-gray-700 text-sm border-r w-1/3">Client Name</th>
+                <th className="p-3 font-bold text-gray-700 text-sm text-center border-r">Status</th>
+                <th className="p-3 font-bold text-gray-700 text-sm text-right border-r">Amount (₹)</th>
+                <th className="p-3 font-bold text-gray-700 text-sm text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSales.map((sale) => (
+                <tr key={sale._id} className="border-b border-gray-200 hover:bg-blue-50 transition-colors">
+                  <td className="p-3 text-gray-600 text-sm border-r">{sale.date}</td>
+                  <td className="p-3 font-mono text-sm text-blue-600 font-bold border-r">{sale.invoiceNumber}</td>
+                  <td className="p-3 font-semibold text-gray-800 border-r">{sale.clientName}</td>
+                  <td className="p-3 text-center border-r">
+                    {sale.status === "Paid" && <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Paid</span>}
+                    {sale.status === "Pending" && <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">Pending</span>}
+                    {sale.status === "Overdue" && <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">Overdue</span>}
+                  </td>
+                  <td className="p-3 text-right font-bold text-gray-700 border-r">₹{Number(sale.amount).toLocaleString()}</td>
+                  <td className="p-3 text-center">
+                    <div className="flex justify-center gap-3">
+                      <button onClick={() => handleEdit(sale)} className="text-gray-500 hover:text-blue-600" title="Edit/View Invoice">✏️</button>
+                      <button onClick={() => handleDelete(sale._id)} className="text-red-400 hover:text-red-600" title="Delete">🗑️</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredSales.length === 0 && (<tr><td colSpan="6" className="p-8 text-center text-gray-500">No sales recorded. Create an invoice!</td></tr>)}
+            </tbody>
+          </table>
         </div>
-      </div>
-
-      {/* Main Content Body */}
-      <div className="p-8 flex flex-col items-center flex-1">
-        <h2 className="text-gray-800 font-bold mb-8">Please follow the below steps to upload a sales file</h2>
-
-        {/* Video Banner Placeholder */}
-        <div className="w-full max-w-2xl bg-blue-900 rounded-xl overflow-hidden relative shadow-lg mb-16 h-64 flex flex-col items-center justify-center text-white text-center">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-          <div className="relative z-10 space-y-4">
-            <div className="flex items-center gap-2 justify-center bg-white/10 px-3 py-1 rounded-full text-sm font-medium w-max mx-auto">
-              <span className="bg-white text-blue-900 px-1.5 rounded-full font-bold text-xs">Afnan</span>
-              Sales & Purchase Automation
-            </div>
-            <h3 className="text-2xl font-bold">How to process sales/purchase & sales return</h3>
-            <button className="bg-white text-gray-900 font-bold flex items-center gap-2 px-6 py-2 rounded-full hover:bg-gray-100 transition mx-auto mt-4">
-              <Play className="w-4 h-4 fill-current text-red-600" /> Watch on YouTube
-            </button>
-          </div>
-        </div>
-
-        {/* Stepper Steps */}
-        <div className="w-full max-w-4xl relative">
-          {/* Horizontal connecting line */}
-          <div className="absolute top-4 left-0 w-full h-0.5 bg-blue-100 -z-10"></div>
-
-          <div className="grid grid-cols-4 gap-4 text-center">
-            <StepItem 
-              number="1" 
-              title="Upload" 
-              desc={<>Click on the <span className="text-blue-600 cursor-pointer hover:underline">upload</span> button to upload the sales file</>} 
-            />
-            <StepItem number="2" title="Map the sheet data" desc="Map the data with Tally fields" />
-            <StepItem number="3" title="Save Transaction" desc="Select the ledger, other details and click on the save button" />
-            <StepItem number="4" title="Send to Tally" desc="Click on Send to Tally button to sync the transactions" />
-          </div>
-        </div>
-
-        <div className="mt-16 text-sm text-gray-600 flex items-center gap-2">
-          <span>📚</span> If you want to read documentation: <a href="#" className="text-blue-600 font-medium hover:underline">Click here</a>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Helper component for the 4 steps
-function StepItem({ number, title, desc }) {
-  return (
-    <div className="flex flex-col items-center">
-      <div className="w-8 h-8 rounded-full bg-white border-2 border-blue-100 text-blue-600 font-bold flex items-center justify-center mb-4 shadow-sm">
-        {number}
-      </div>
-      <div className="bg-white border rounded-lg p-4 shadow-sm w-full h-full">
-        <h4 className="font-bold text-gray-800 text-sm mb-2">{title}</h4>
-        <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
       </div>
     </div>
   );

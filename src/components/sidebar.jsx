@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, Users, FileText, PieChart, Briefcase, 
   Wallet, ShoppingCart, BarChart2, Database, BookOpen, 
-  ChevronDown, ChevronRight, X
+  ChevronDown, ChevronRight, X, Receipt
 } from "lucide-react";
 
 export default function Sidebar({ isOpen, closeSidebar }) {
@@ -17,11 +17,12 @@ export default function Sidebar({ isOpen, closeSidebar }) {
 
   const menuItems = [
     { name: "Dashboard", path: "/", icon: <LayoutDashboard size={20} /> },
-    { name: "Client & Company", path: "/company", icon: <Briefcase size={20} /> },
-    { name: "GST Manager", path: "/gst-manager", icon: <FileText size={20} /> },
-    { name: "User & Roles", path: "/users", icon: <Users size={20} /> },
+    { name: "Client & Company", path: "/clients", icon: <Briefcase size={20} /> }, // Connected to new page
+    { name: "Invoices", path: "/invoices", icon: <Receipt size={20} /> }, // Added new Invoice page
+    { name: "Gst Manager", path: "/gst", icon: <FileText size={20} /> },
+    { name: "User Roles", path: "/users", icon: <Users size={20} /> },
     
-    // Here is our new Sub-menu Structure!
+    // Your nested Sub-menu Structure!
     { 
       name: "Data Entry", 
       id: "dataEntry",
@@ -39,9 +40,15 @@ export default function Sidebar({ isOpen, closeSidebar }) {
 
   return (
     <aside className={`
-      bg-white border-r min-h-screen flex flex-col absolute md:relative z-50 w-64 transition-transform duration-300 ease-in-out
+      bg-white border-r min-h-screen flex flex-col absolute md:relative z-50 w-64 transition-transform duration-300 ease-in-out shadow-xl
       ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
     `}>
+      {/* BRANDING LOGO AREA (Added to match your light theme) */}
+      <div className="p-6 border-b">
+        <h2 className="text-2xl font-bold text-blue-700">Afnan Books</h2>
+        <p className="text-gray-500 text-xs mt-1">Super Admin Panel</p>
+      </div>
+
       {/* Mobile Close Button */}
       <div className="flex justify-end p-4 md:hidden border-b">
         <button onClick={closeSidebar} className="text-gray-500 hover:text-red-500">
@@ -80,7 +87,7 @@ export default function Sidebar({ isOpen, closeSidebar }) {
                           <li key={sub.name}>
                             <Link
                               to={sub.path}
-                              onClick={closeSidebar} // Close sidebar on mobile after clicking
+                              onClick={closeSidebar ? closeSidebar : undefined} 
                               className={`flex items-center gap-3 pl-12 pr-6 py-2.5 text-sm font-medium transition-colors
                                 ${isActive ? "text-blue-700 font-bold border-r-4 border-blue-700" : "text-gray-500 hover:text-blue-700"}`}
                             >
@@ -101,7 +108,7 @@ export default function Sidebar({ isOpen, closeSidebar }) {
               <li key={item.name}>
                 <Link
                   to={item.path}
-                  onClick={closeSidebar} // Close sidebar on mobile after clicking
+                  onClick={closeSidebar ? closeSidebar : undefined}
                   className={`flex items-center gap-3 px-6 py-3 text-sm font-medium transition-colors
                     ${isActive ? "bg-blue-50 text-blue-700 border-r-4 border-blue-700" : "text-gray-600 hover:bg-gray-50 hover:text-blue-700"}`}
                 >
